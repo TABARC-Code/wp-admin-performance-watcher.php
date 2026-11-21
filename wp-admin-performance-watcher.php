@@ -81,7 +81,7 @@ if ( ! class_exists( 'WP_Admin_Performance_Watcher' ) ) {
                     width: 18px;
                     height: 18px;
                     margin-right: 6px;
-                    background-image: url('<?php echo $icon_url; ?>');
+                    background-image: url('<?php echo esc_url( $icon_url ); ?>');
                     background-repeat: no-repeat;
                     background-size: contain;
                 }
@@ -333,7 +333,7 @@ if ( ! class_exists( 'WP_Admin_Performance_Watcher' ) ) {
                 return;
             }
 
-            $in = (array) $_POST['wapw_settings'];
+            $in = (array) wp_unslash( $_POST['wapw_settings'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- values cast below.
             $new = $this->get_default_settings();
 
             $new['enabled'] = ! empty( $in['enabled'] );
