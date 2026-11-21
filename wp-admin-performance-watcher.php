@@ -326,7 +326,7 @@ if ( ! class_exists( 'WP_Admin_Performance_Watcher' ) ) {
             if ( empty( $_POST['wapw_settings'] ) ) {
                 return;
             }
-            if ( empty( $_POST['wapw_nonce'] ) || ! wp_verify_nonce( $_POST['wapw_nonce'], 'wapw_save_settings' ) ) {
+            if ( empty( $_POST['wapw_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['wapw_nonce'] ) ), 'wapw_save_settings' ) ) {
                 return;
             }
             if ( ! current_user_can( 'manage_options' ) ) {

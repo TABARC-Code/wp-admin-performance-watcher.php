@@ -35,7 +35,7 @@ Sample rate:
 Start at 25 percent. Increase if you are not getting enough data.
 Retention:
 14 days is usually enough to spot “it got worse last week”.
-If you set 90 days, expect more data and more storage. Still not massive, just dont pretend it is free.
+If you set 90 days, expect more data and more storage. Still not massive, just don't pretend it is free.
 ## Safety note
 This plugin stores performance samples. It does not delete content.
 If you are worried about data footprint, lower sampling and retention.
