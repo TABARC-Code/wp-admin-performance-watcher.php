@@ -8,6 +8,7 @@
  * Author URI: https://github.com/TABARC-Code
  * License: GPL-3.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
+ * Text Domain: wp-admin-performance-watcher
  *
  * Why this exists:
  * Admin gets slower. People complain. Nobody knows when it started.
@@ -394,7 +395,7 @@ if ( ! class_exists( 'WP_Admin_Performance_Watcher' ) ) {
             $is_ajax = ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ? 1 : 0;
             $is_heartbeat = 0;
 
-            if ( $is_ajax && isset( $_REQUEST['action'] ) && $_REQUEST['action'] === 'heartbeat' ) {
+            if ( $is_ajax && isset( $_REQUEST['action'] ) && 'heartbeat' === sanitize_key( wp_unslash( $_REQUEST['action'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
                 $is_heartbeat = 1;
             }
 
@@ -426,7 +427,7 @@ if ( ! class_exists( 'WP_Admin_Performance_Watcher' ) ) {
             $this->request_context = array(
                 'recorded_at_gmt' => gmdate( 'Y-m-d H:i:s' ),
                 'url_path' => $this->get_request_path(),
-                'method' => isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( $_SERVER['REQUEST_METHOD'] ) : 'GET',
+                'method' => isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : 'GET',
                 'user_id' => (int) $user_id,
                 'user_roles' => $roles,
                 'hook_suffix' => '',
@@ -553,12 +554,12 @@ if ( ! class_exists( 'WP_Admin_Performance_Watcher' ) ) {
         }
 
         private function get_request_path() {
-            $uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
-            if ( $uri === '' ) {
+            $uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+            if ( '' === $uri ) {
                 return '';
             }
             $parts = explode( '?', $uri, 2 );
-            return $parts[0];
+            return substr( $parts[0], 0, 500 );
         }
 
         private function hash_active_plugins() {
@@ -583,17 +584,28 @@ if ( ! class_exists( 'WP_Admin_Performance_Watcher' ) ) {
 
             global $wpdb;
 
-            $sample_ids = $wpdb->get_col(
-                $wpdb->prepare(
-                    "SELECT id FROM {$this->table_samples} WHERE recorded_at < %s LIMIT 5000",
-                    get_date_from_gmt( $cutoff, 'Y-m-d H:i:s' )
-                )
-            );
+            $cutoff_local = get_date_from_gmt( $cutoff, 'Y-m-d H:i:s' );
 
-            if ( ! empty( $sample_ids ) ) {
+            // Work in batches, with a cap per run, so a backlog clears without one huge delete.
+            for ( $batch = 0; $batch < 20; $batch++ ) {
+                $sample_ids = $wpdb->get_col(
+                    $wpdb->prepare(
+                        "SELECT id FROM {$this->table_samples} WHERE recorded_at < %s LIMIT 5000",
+                        $cutoff_local
+                    )
+                );
+
+                if ( empty( $sample_ids ) ) {
+                    break;
+                }
+
                 $ids_in = implode( ',', array_map( 'intval', $sample_ids ) );
                 $wpdb->query( "DELETE FROM {$this->table_slow_queries} WHERE sample_id IN ($ids_in)" );
                 $wpdb->query( "DELETE FROM {$this->table_samples} WHERE id IN ($ids_in)" );
+
+                if ( count( $sample_ids ) < 5000 ) {
+                    break;
+                }
             }
         }
 
