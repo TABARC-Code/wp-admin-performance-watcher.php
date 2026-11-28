@@ -14,3 +14,14 @@ node_modules/
 npm-debug.log*
 yarn.lock
 .pnp.*
+
+**/chat-exports/
+**/chat_exports/
+**/chat-transcripts/
+**/conversation-exports/
+**/conversation-logs/
+**/.claude/projects/
+**/.claude/debug/
+**/.claude/session-env/
+**/.claude/history.jsonl
+**/.claude/settings.local.json
